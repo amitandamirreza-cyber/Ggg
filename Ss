@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🐇 فرار خرگوش از گرگ 🐺</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(145deg, #1a3a1a 0%, #2d5a2d 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            touch-action: pan-y;
+        }
+
+        .game-container {
+            background: #3e2a1e;
+            padding: 20px 20px 25px;
+            border-radius: 60px 60px 40px 40px;
+            box-shadow: 0 20px 30px rgba(0,0,0,0.7), inset 0 2px 5px rgba(255,255,200,0.3);
+            border: 6px solid #8b6b4b;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            max-width: 700px;
+            height: auto;
+            border-radius: 30px;
+            box-shadow: inset 0 0 30px #00000066, 0 10px 15px #0000004d;
+            cursor: none;
+            background: #a8d08d;
+            transition: filter 0.2s;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 15px 0;
+            color: #f7e6c4;
+            text-shadow: 3px 3px 0 #3e2a1e;
+            font-size: 1.6rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .hud span {
+            background: #1f1a14cc;
+            padding: 8px 24px;
+            border-radius: 50px;
+            backdrop-filter: blur(4px);
+            border: 2px solid #e6cba0;
+            box-shadow: 0 5px 0 #0f0d0a;
+            transition: transform 0.1s;
+        }
+
+        .restart-btn {
+            background: #e6b422;
+            border: none;
+            color: #2d1f0e;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 8px 25px;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #8a6e1a, 0 8px 12px black;
+            transition: 0.07s ease;
+            font-family: inherit;
+            letter-spacing: 1px;
+        }
+
+        .restart-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 #8a6e1a, 0 5px 10px black;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000000b0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 30px;
+            backdrop-filter: blur(6px);
+            z-index: 100;
+            color: #ffeec2;
+            font-size: 3rem;
+            font-weight: 900;
+            text-shadow: 8px 8px 0 #2d1f0e;
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.25s;
+        }
+
+        .overlay.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .overlay small {
+            font-size: 1.3rem;
+            text-shadow: 3px 3px 0 #2d1f0e;
+            background: #1f1a14cc;
+            padding: 12px 40px;
+            border-radius: 60px;
+            border: 2px solid #e6cba0;
+            margin-top: 10px;
+        }
+
+        .mobile-controls {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 12px;
+            padding: 0 10px;
+        }
+
+        .mobile-controls button {
+            background: #5a4a36;
+            border: 3px solid #dbb87c;
+            color: #ffeec2;
+            font-size: 2.8rem;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 0 #2f2419, 0 10px 20px black;
+            cursor: pointer;
+            transition: 0.07s;
+            font-weight: bold;
+            line-height: 1;
+            touch-action: manipulation;
+        }
+
+        .mobile-controls button:active {
+            transform: translateY(8px);
+            box-shadow: 0 2px 0 #2f2419, 0 8px 15px black;
+        }
+
+        @media (max-width: 600px) {
+            .game-container { padding: 12px 12px 18px; border-radius: 40px; }
+            .hud { font-size: 1.2rem; }
+            .hud span { padding: 5px 15px; }
+            .restart-btn { font-size: 0.9rem; padding: 5px 15px; }
+            .mobile-controls button { width: 70px; height: 70px; font-size: 2.2rem; }
+            .overlay { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="700" height="500"></canvas>
+        <div class="hud">
+            <span>⏱️ <span id="timerDisplay">0.0</span></span>
+            <button class="restart-btn" id="restartBtn">🔄 شروع دوباره</button>
+            <span>🏆 <span id="bestDisplay">0.0</span></span>
+        </div>
+    </div>
+
+    <!-- دکمه‌های لمسی برای موبایل -->
+    <div class="mobile-controls">
+        <button id="btnUp">▲</button>
+        <button id="btnLeft">◀</button>
+        <button id="btnDown">▼</button>
+        <button id="btnRight">▶</button>
+    </div>
+
+    <div class="overlay" id="gameOverlay">
+        <div id="overlayText">🐺 گرگ گرفتت! 🐇</div>
+        <small id="overlaySub">برای شروع دوباره کلیک کن</small>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const timerDisplay = document.getElementById('timerDisplay');
+            const bestDisplay = document.getElementById('bestDisplay');
+            const restartBtn = document.getElementById('restartBtn');
+            const overlay = document.getElementById('gameOverlay');
+            const overlayText = document.getElementById('overlayText');
+            const overlaySub = document.getElementById('overlaySub');
+
+            // تنظیمات ابعاد منطقی
+            const W = 700, H = 500;
+
+            // وضعیت بازی
+            let gameActive = false;
+            let gameOver = false;
+            let startTime = 0;
+            let elapsedTime = 0;
+            let bestTime = parseFloat(localStorage.getItem('rabbitBestTime')) || 0;
+            bestDisplay.textContent = bestTime.toFixed(1);
+
+            // خرگوش
+            const rabbit = {
+                x: W/2,
+                y: H/2,
+                r: 15,
+                speed: 3.8,
+                dx: 0,
+                dy: 0
+            };
+
+            // گرگ‌ها
+            let wolves = [];
+
+            // زمان‌بندی
+            let lastTime = 0;
+            let wolfSpawnTimer = 0;
+            const WOLF_SPAWN_INTERVAL = 1.4; // ثانیه
+
+            // ورودی‌ها
+            const keys = {
+                ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false,
+                w: false, a: false, s: false, d: false,
+                W: false, A: false, S: false, D: false
+            };
+
+            // کنترل لمسی
+            const touchState = { up: false, down: false, left: false, right: false };
+
+            // --- توابع کمکی ---
+            function distance(x1, y1, x2, y2) {
+                return Math.hypot(x2 - x1, y2 - y1);
+            }
+
+            // ذخیره بهترین زمان
+            function updateBestTime(time) {
+                if (time > bestTime) {
+                    bestTime = time;
+                    localStorage.setItem('rabbitBestTime', bestTime);
+                    bestDisplay.textContent = bestTime.toFixed(1);
+                }
+            }
+
+            // ریست کامل بازی
+            function resetGame() {
+                gameActive = true;
+                gameOver = false;
+                overlay.classList.remove('show');
+                elapsedTime = 0;
+                timerDisplay.textContent = '0.0';
+                startTime = performance.now() / 1000;
+
+                // خرگوش وسط
+                rabbit.x = W/2;
+                rabbit.y = H/2;
+                rabbit.dx = 0;
+                rabbit.dy = 0;
+
+                // پاک کردن گرگ‌ها
+                wolves = [];
+
+                // اضافه کردن دو گرگ اولیه در فاصله دور
+                spawnWolf(true);
+                spawnWolf(true);
+
+                wolfSpawnTimer = 0;
+                lastTime = performance.now() / 1000;
+                requestAnimationFrame(gameLoop);
+            }
+
+            // تولید گرگ
+            function spawnWolf(initial = false) {
+                const side = Math.floor(Math.random() * 4); // 0: بالا, 1: راست, 2: پایین, 3: چپ
+                let x, y;
+                const margin = 50;
+                if (side === 0) { // بالا
+                    x = Math.random() * W;
+                    y = -margin;
+                } else if (side === 1) { // راست
+                    x = W + margin;
+                    y = Math.random() * H;
+                } else if (side === 2) { // پایین
+                    x = Math.random() * W;
+                    y = H + margin;
+                } else { // چپ
+                    x = -margin;
+                    y = Math.random() * H;
+                }
+
+                // سرعت گرگ با گذشت زمان کمی افزایش می‌یابد (بعد از 10 ثانیه)
+                let speed = 1.6 + Math.min(elapsedTime * 0.04, 1.8);
+
+                wolves.push({
+                    x, y,
+                    r: 16,
+                    speed: speed,
+                    // برای حرکت نرم به سمت خرگوش
+                });
+            }
+
+            // به‌روزرسانی موقعیت خرگوش بر اساس ورودی
+            function updateRabbit(dt) {
+                let moveX = 0, moveY = 0;
+                // کیبورد
+                if (keys.ArrowUp || keys.w || keys.W || touchState.up) moveY -= 1;
+                if (keys.ArrowDown || keys.s || keys.S || touchState.down) moveY += 1;
+                if (keys.ArrowLeft || keys.a || keys.A || touchState.left) moveX -= 1;
+                if (keys.ArrowRight || keys.d || keys.D || touchState.right) moveX += 1;
+
+                // نرمالایز کردن بردار حرکت
+                if (moveX !== 0 || moveY !== 0) {
+                    const len = Math.hypot(moveX, moveY);
+                    moveX /= len;
+                    moveY /= len;
+                }
+
+                const speed = rabbit.speed;
+                rabbit.x += moveX * speed;
+                rabbit.y += moveY * speed;
+
+                // محدود کردن خرگوش به داخل صفحه (با در نظر گرفتن شعاع)
+                rabbit.x = Math.max(rabbit.r, Math.min(W - rabbit.r, rabbit.x));
+                rabbit.y = Math.max(rabbit.r, Math.min(H - rabbit.r, rabbit.y));
+            }
+
+            // به‌روزرسانی گرگ‌ها
+            function updateWolves(dt) {
+                for (let i = wolves.length - 1; i >= 0; i--) {
+                    const w = wolves[i];
+                    // جهت به سمت خرگوش
+                    const dx = rabbit.x - w.x;
+                    const dy = rabbit.y - w.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist > 0.5) {
+                        const move = w.speed * dt * 60; // نرمالایز بر اساس فریم ریت (60fps)
+                        w.x += (dx / dist) * move;
+                        w.y += (dy / dist) * move;
+                    }
+
+                    // حذف گرگ‌هایی که خیلی از صفحه دور شده‌اند (برای بهینه‌سازی)
+                    if (w.x < -200 || w.x > W + 200 || w.y < -200 || w.y > H + 200) {
+                        // اما فقط اگر بازی فعال است حذف کن
+                        if (gameActive) wolves.splice(i, 1);
+                    }
+                }
+            }
+
+            // بررسی برخورد
+            function checkCollision() {
+                for (let w of wolves) {
+                    const dist = distance(rabbit.x, rabbit.y, w.x, w.y);
+                    if (dist < rabbit.r + w.r - 2) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // پایان بازی
+            function endGame() {
+                if (!gameActive) return;
+                gameActive = false;
+                gameOver = true;
+
+                // ذخیره بهترین زمان
+                if (elapsedTime > 0) {
+                    updateBestTime(elapsedTime);
+                }
+
+                overlayText.innerHTML = `🐺 گرگ گرفتت! 🐇<br><span style="font-size:1.8rem;">⏱️ ${elapsedTime.toFixed(1)} ثانیه</span>`;
+                overlaySub.textContent = 'برای شروع دوباره کلیک کن';
+                overlay.classList.add('show');
+            }
+
+            // --- حلقه اصلی بازی ---
+            function gameLoop(now) {
+                if (!gameActive) {
+                    // اگر بازی غیرفعاله ولی انیمیشن قبلی در جریانه، متوقفش کن
+                    return;
+                }
+
+                const currentTime = now / 1000;
+                let dt = currentTime - lastTime;
+                if (dt > 0.1) dt = 0.1; // جلوگیری از پرش در فریم‌های طولانی
+                lastTime = currentTime;
+
+                // به‌روزرسانی زمان
+                elapsedTime = currentTime - startTime;
+                timerDisplay.textContent = elapsedTime.toFixed(1);
+
+                // به‌روزرسانی موجودیت‌ها
+                updateRabbit(dt);
+                updateWolves(dt);
+
+                // تولید گرگ جدید
+                wolfSpawnTimer += dt;
+                if (wolfSpawnTimer >= WOLF_SPAWN_INTERVAL) {
+                    wolfSpawnTimer = 0;
+                    spawnWolf();
+                }
+
+                // بررسی برخورد
+                if (checkCollision()) {
+                    endGame();
+                    draw(); // یک بار رسم کن تا آخرین وضعیت دیده شود
+                    return;
+                }
+
+                // رسم
+                draw();
+
+                // ادامه حلقه
+                requestAnimationFrame(gameLoop);
+            }
+
+            // --- رسم گرافیک ---
+            function draw() {
+                ctx.clearRect(0, 0, W, H);
+
+                // چمن پس‌زمینه
+                const grad = ctx.createLinearGradient(0, 0, 0, H);
+                grad.addColorStop(0, '#8bc34a');
+                grad.addColorStop(0.6, '#6d9e3b');
+                grad.addColorStop(1, '#4a7a2a');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, W, H);
+
+                // الگوی چمن (نقطه‌های ریز)
+                ctx.fillStyle = '#7cae4a';
+                for (let i = 0; i < 200; i++) {
+                    ctx.beginPath();
+                    ctx.arc(Math.random() * W, Math.random() * H, 1 + Math.random() * 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // رسم گرگ‌ها
+                wolves.forEach(w => {
+                    // سایه
+                    ctx.shadowColor = '#00000066';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowOffsetY = 3;
+
+                    // بدن گرگ (خاکستری تیره)
+                    ctx.beginPath();
+                    ctx.ellipse(w.x, w.y, w.r, w.r * 1.1, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = '#4a3e35';
+                    ctx.fill();
+
+                    // خز روشن‌تر
+                    ctx.beginPath();
+                    ctx.ellipse(w.x - 3, w.y - 3, w.r * 0.8, w.r * 0.9, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = '#6b5d52';
+                    ctx.fill();
+
+                    // گوش‌ها
+                    ctx.shadowBlur = 5;
+                    ctx.beginPath();
+                    ctx.moveTo(w.x - 10, w.y - 12);
+                    ctx.lineTo(w.x - 20, w.y - 28);
+                    ctx.lineTo(w.x - 2, w.y - 18);
+                    ctx.fillStyle = '#3a3028';
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.moveTo(w.x + 10, w.y - 12);
+                    ctx.lineTo(w.x + 20, w.y - 28);
+                    ctx.lineTo(w.x + 2, w.y - 18);
+                    ctx.fillStyle = '#3a3028';
+                    ctx.fill();
+
+                    // چشم‌ها (قرمز درخشان)
+                    ctx.shadowColor = '#ff0000aa';
+                    ctx.shadowBlur = 12;
+                    ctx.beginPath();
+                    ctx.arc(w.x - 6, w.y - 5, 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ff3333';
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(w.x + 6, w.y - 5, 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ff3333';
+                    ctx.fill();
+                    // درخشش مردمک
+                    ctx.shadowBlur = 0;
+                    ctx.beginPath();
+                    ctx.arc(w.x - 7, w.y - 7, 1.2, 0, Math.PI * 2);
+                    ctx.fillStyle = 'white';
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(w.x + 5, w.y - 7, 1.2, 0, Math.PI * 2);
+                    ctx.fillStyle = 'white';
+                    ctx.fill();
+
+                    // بینی
+                    ctx.beginPath();
+                    ctx.arc(w.x, w.y + 5, 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#1f1a16';
+                    ctx.fill();
+
+                    // دهان
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#2d1f0e';
+                    ctx.lineWidth = 2;
+                    ctx.moveTo(w.x, w.y + 8);
+                    ctx.lineTo(w.x - 5, w.y + 14);
+                    ctx.moveTo(w.x, w.y + 8);
+                    ctx.lineTo(w.x + 5, w.y + 14);
+                    ctx.stroke();
+                });
+
+                // رسم خرگوش
+                ctx.shadowColor = '#00000055';
+                ctx.shadowBlur = 14;
+                ctx.shadowOffsetY = 4;
+
+                // بدن سفید
+                ctx.beginPath();
+                ctx.ellipse(rabbit.x, rabbit.y, rabbit.r, rabbit.r * 1.1, 0, 0, Math.PI * 2);
+                ctx.fillStyle = '#f9f3e6';
+                ctx.fill();
+
+                // خز کرم
+                ctx.beginPath();
+                ctx.ellipse(rabbit.x - 2, rabbit.y - 2, rabbit.r * 0.8, rabbit.r * 0.9, 0, 0, Math.PI * 2);
+                ctx.fillStyle = '#f0e4d0';
+                ctx.fill();
+
+                // گوش‌های خرگوش
+                ctx.shadowBlur = 8;
+                // گوش چپ
+                ctx.beginPath();
+                ctx.ellipse(rabbit.x - 9, rabbit.y - 20, 5, 14, -0.3, 0, Math.PI * 2);
+                ctx.fillStyle = '#f0e4d0';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(rabbit.x - 9, rabbit.y - 20, 2.5, 10, -0.3, 0, Math.PI * 2);
+                ctx.fillStyle = '#e8c8b0';
+                ctx.fill();
+
+                // گوش راست
+                ctx.beginPath();
+                ctx.ellipse(rabbit.x + 9, rabbit.y - 20, 5, 14, 0.3, 0, Math.PI * 2);
+                ctx.fillStyle = '#f0e4d0';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(rabbit.x + 9, rabbit.y - 20, 2.5, 10, 0.3, 0, Math.PI * 2);
+                ctx.fillStyle = '#e8c8b0';
+                ctx.fill();
+
+                // چشم‌های خرگوش (سیاه درخشان)
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = '#ffffffaa';
+                ctx.beginPath();
+                ctx.arc(rabbit.x - 6, rabbit.y - 4, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#2d1f0e';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(rabbit.x + 6, rabbit.y - 4, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#2d1f0e';
+                ctx.fill();
+                // درخشش چشم
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(rabbit.x - 7, rabbit.y - 6, 1.8, 0, Math.PI * 2);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(rabbit.x + 5, rabbit.y - 6, 1.8, 0, Math
